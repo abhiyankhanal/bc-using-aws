@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for simple blockchain demonstration purpose which uses bitcoin testnet
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+
+Parameters:
+  S3BucketName:
+    Type: String
+
+Resources:
+  DemoApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+
+  DemoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src
+      Handler: index.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:  
+          S3_BUCKET_NAME: !Ref S3BucketName
+      Events:
+        GetQrCode:
+          Type: Api
+          Properties:
+            Path: /
+            RestApiId: !Ref DemoApi
+            Method: POST
+        GetTransactionDetails:
+          Type: Api
+          Properties:
+            Path: /transaction
+            RestApiId: !Ref DemoApi
+            Method: POST
+
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        EntryPoints:
+          - index.ts
+
+Outputs:
+  DemoApi:
+    Description: API Gateway endpoint URL for Prod stage for Qr App function
+    Value:
+      Fn::Sub: "https://${DemoApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
